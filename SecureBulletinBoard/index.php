@@ -1,5 +1,7 @@
 <?php
 session_start();//CSRF対策
+$old_sessionid = session_id();
+session_regenerate_id();
 ?>
 <!DOCTYPE html>
 <html>
@@ -24,7 +26,7 @@ session_start();//CSRF対策
   // POSTとして送信されてきたときのみ実行
   // (通常アクセスはGET，フォーム送信はPOST)
   $fp = fopen('data.csv', 'a+b');
-  if ($_SERVER['REQUEST_METHOD'] === 'POST' && sha1(session_id()) === $token /*tokenと今のsession_idのハッシュ値が同じ*/) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && sha1($old_sessionid) === $token /*tokenと今のsession_idのハッシュ値が同じ*/) {
     flock($fp, LOCK_EX); // 排他ロックを行う
     fputcsv($fp, [$name, $text]);
     rewind($fp); // ポインタを先頭に移動させる
