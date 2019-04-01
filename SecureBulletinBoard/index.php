@@ -1,26 +1,41 @@
+<?php
+session_start();//CSRF対策
+?>
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <title>掲示板</title>
-
   <?php
+  // XSS対策
+  $hsc = function ($str) {
+      return htmlspecialchars($str, ENT_QUOTES, 'UTF-8');
+  };
+
+  //値の取得
+  $name = (string)filter_input(INPUT_POST, 'name');
+  $text = (string)filter_input(INPUT_POST, 'text');
+  $token = (string)filter_input(INPUT_POST, 'token');
+
   // デバッグ:値の確認用
-  echo "posted:${_POST['name']} ${_POST['text']}<br>";
+  echo "posted:{$name} {$text}<br>";
   echo 'REQUEST_METHOD:' . $_SERVER['REQUEST_METHOD'];
+
   // POSTとして送信されてきたときのみ実行
   // (通常アクセスはGET，フォーム送信はPOST)
   $fp = fopen('data.csv', 'a+b');
-  if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-      fputcsv($fp, [$_POST['name'], $_POST['text']]);
+  if ($_SERVER['REQUEST_METHOD'] === 'POST' && sha1(session_id()) === $token /*tokenと今のsession_idのハッシュ値が同じ*/) {
+    flock($fp, LOCK_EX); // 排他ロックを行う
+    fputcsv($fp, [$name, $text]);
+    rewind($fp); // ポインタを先頭に移動させる
   }
 
-  rewind($fp); // ポインタを先頭に移動させる
+  flock($fp, LOCK_SH);
   while ($row = fgetcsv($fp)) { // 取り出せる行が有る限りrowに取り出す [array fgetcsv ( resource $handle )]
     $rows[] = $row; // array_push関数と同じ働きをする
   }
+  flock($fp, LOCK_UN);
   fclose($fp);
-
   ?>
 </head>
 <body>
@@ -31,6 +46,7 @@
       名前: <input type="text" name="name" value=""><br>
       本文: <input type="text" name="text" value=""><br>
       <button type="submit">投稿</button>
+      <input type="hidden" name="token" value="<?=$hsc(sha1(session_id()))/*idをハッシュ値にしてpostする*/?>">
     </form>
   </section>
   <section>
@@ -39,7 +55,7 @@
     if(!empty($rows)){
       echo '<ul>';
       foreach ($rows as $row) {
-        echo "<li>${row[1]}(${row[0]})</li>";
+        echo '<li>'."{$hsc($row[1])}"."({$hsc($row[0])})".'</li>'; //hsc関数を通して脆弱性回避
       }
       echo '</ul>';
     }else{
