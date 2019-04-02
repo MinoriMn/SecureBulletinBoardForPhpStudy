@@ -12,6 +12,11 @@ session_start();//CSRF対策
       return htmlspecialchars($str, ENT_QUOTES, 'UTF-8');
   };
 
+  require_once('delete.php');
+  if(isset($_POST['delete'])){
+    delete(0);
+  }
+
   //値の取得
   $name = (string)filter_input(INPUT_POST, 'name');
   $text = (string)filter_input(INPUT_POST, 'text');
@@ -26,7 +31,7 @@ session_start();//CSRF対策
   $fp = fopen('data.csv', 'a+b');
 
   rewind($fp); // ポインタを先頭に移動させる
-  flock($fp, LOCK_SH);
+  flock($fp, LOCK_EX);
   while ($row = fgetcsv($fp)) { // 取り出せる行が有る限りrowに取り出す [array fgetcsv ( resource $handle )]
     $rows[] = $row; // array_push関数と同じ働きをする
   }
@@ -37,16 +42,16 @@ session_start();//CSRF対策
   }else{
     $id = 0;
   }
-  echo "id: $id <br>";
 
   if ($_SERVER['REQUEST_METHOD'] === 'POST' && sha1(session_id()) === $token /*tokenと今のsession_idのハッシュ値が同じ*/) {
-    flock($fp, LOCK_EX); // 排他ロックを行う
+    // flock($fp, LOCK_EX); // 排他ロックを行う
     fputcsv($fp, [$name, $text, $id]);
     $rows[] = [$name, $text, $id];
   }
 
   flock($fp, LOCK_UN);
   fclose($fp);
+
   ?>
 </head>
 <body>
@@ -62,6 +67,9 @@ session_start();//CSRF対策
   </section>
   <section>
     <h2>投稿一覧</h2>
+    <form class="" action="" method="post">
+      <button type="submit" name="delete" value="GO">削除</button>
+    </form>
     <?php
     if(!empty($rows)){
       echo '<ul>';
