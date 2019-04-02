@@ -1,7 +1,5 @@
 <?php
 session_start();//CSRF対策
-$old_sessionid = session_id();
-session_regenerate_id();
 ?>
 <!DOCTYPE html>
 <html>
@@ -26,16 +24,27 @@ session_regenerate_id();
   // POSTとして送信されてきたときのみ実行
   // (通常アクセスはGET，フォーム送信はPOST)
   $fp = fopen('data.csv', 'a+b');
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && sha1($old_sessionid) === $token /*tokenと今のsession_idのハッシュ値が同じ*/) {
-    flock($fp, LOCK_EX); // 排他ロックを行う
-    fputcsv($fp, [$name, $text]);
-    rewind($fp); // ポインタを先頭に移動させる
-  }
 
+  rewind($fp); // ポインタを先頭に移動させる
   flock($fp, LOCK_SH);
   while ($row = fgetcsv($fp)) { // 取り出せる行が有る限りrowに取り出す [array fgetcsv ( resource $handle )]
     $rows[] = $row; // array_push関数と同じ働きをする
   }
+
+  //id取得
+  if(!empty($rows)){
+    $id = $rows[count($rows) - 1][2] + 1;
+  }else{
+    $id = 0;
+  }
+  echo "id: $id <br>";
+
+  if ($_SERVER['REQUEST_METHOD'] === 'POST' && sha1(session_id()) === $token /*tokenと今のsession_idのハッシュ値が同じ*/) {
+    flock($fp, LOCK_EX); // 排他ロックを行う
+    fputcsv($fp, [$name, $text, $id]);
+    $rows[] = [$name, $text, $id];
+  }
+
   flock($fp, LOCK_UN);
   fclose($fp);
   ?>
@@ -57,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && sha1($old_sessionid) === $token /*t
     if(!empty($rows)){
       echo '<ul>';
       foreach ($rows as $row) {
-        echo '<li>'."{$hsc($row[1])}"."({$hsc($row[0])})".'</li>'; //hsc関数を通して脆弱性回避
+        echo '<li>'."{$hsc($row[1])}"."({$hsc($row[0])})"." id={$row[2]}".'</li>'; //hsc関数を通して脆弱性回避
       }
       echo '</ul>';
     }else{
