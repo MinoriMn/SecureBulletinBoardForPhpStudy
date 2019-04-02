@@ -6,7 +6,7 @@
 2. zipを好きな場所に解凍
 3. ターミナルを起動して以下を実行
 ```sh
-$ cd ほにゃらら/SecureBulletinBoard # カレントディレクトリをSecureBulletinBoardにする
+$ cd ほにゃらら/SecureBulletinBoard # カレントディレクトリを解凍したフォルダのSecureBulletinBoardにする
 $ php -S 127.0.0.1:8080 index.php # サーバーを起動
 ```
 
