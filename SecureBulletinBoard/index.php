@@ -12,8 +12,9 @@ session_start();//CSRF対策
       return htmlspecialchars($str, ENT_QUOTES, 'UTF-8');
   };
 
+  //削除
   require_once('delete.php');
-  if(isset($_POST['delete'])){
+  if($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['delete'])){
     delete(0);
   }
 

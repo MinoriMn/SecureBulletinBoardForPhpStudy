@@ -1,5 +1,6 @@
 <?php
 function delete($delete_id){
+  //データ読み込み
   $fp = fopen('data.csv', 'r');
 
   flock($fp, LOCK_SH);
@@ -9,10 +10,17 @@ function delete($delete_id){
 
   fclose($fp);
 
-  $fp = fopen('data.csv', 'wd');
+  //データが空ならreturn
+  if(empty($rows)){
+    return;
+  }
 
-  flock($fp, LOCK_SH);
+  //該当行削除
   unset($rows[$delete_id]);
+
+  //データ書き込み
+  $fp = fopen('data.csv', 'wd');
+  flock($fp, LOCK_SH);
   foreach ($rows as $row) {
     fputcsv($fp, $row);
   }
@@ -20,7 +28,4 @@ function delete($delete_id){
   fclose($fp);
 }
 
-if($_SERVER['REQUEST_METHOD'] == "POST" and isset($_POST['someAction'])){
-  delete(0);
-}
  ?>
